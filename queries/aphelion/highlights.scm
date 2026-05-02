@@ -13,39 +13,39 @@
 (immediate) @number
 
 [
-;  "include"
-;  "forceinclude"
+  "include"
+  "forceinclude"
 
   "section"
-;  "symbol"
-;  "define"
-;  "loc"
+  "symbol"
+  "define"
+  "loc"
 
-;  "entry"
+  "entry"
 
-; "global"
-;  "local"
-;  "weak"
+  "global"
+  "local"
+  "weak"
 
-;  "repeat"
-;  "unaligned"
+  "repeat"
+  "unaligned"
 
-;  "align"
-;  "zero"
-;  "byte"
-;  "qword"
-;  "hword"
-;  "word"
-;  "string"
+  "align"
+  "zero"
+  "byte"
+  "qword"
+  "hword"
+  "word"
+  "string"
 
-  ; "unmapped"
-  ; "executable"
-  ; "writable"
-  ; "blank"
-  ; "pinned"
-  ; "common"
-  ; "nonvolatile"
-  ; "unique"
+  "unmapped"
+  "executable"
+  "writable"
+  "blank"
+  "pinned"
+  "common"
+  "nonvolatile"
+  "unique"
 ] @keyword
 
 [
