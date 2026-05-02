@@ -45,10 +45,32 @@ export default grammar({
     label: $ => seq(repeat($.label_attribute), field("name", $.identifier), ":"),
 
     label_attribute: $ => token(prec(1, choice(
-	"entry",
-	"global",
-	"local",
-	"weak",
+	    "entry",
+	    "global",
+	    "local",
+	    "weak",
+    ))),
+
+    directive: $ => seq(repeat($.directive_attribute), choice(
+      seq(field("directive", token(prec(1, "string"))), 
+        $.string, repeat(seq(",", $.string)), optional($.string)
+      ),
+      seq(field("directive", $._data_directive), 
+        $._expression, repeat(seq(",", $._expression)), optional($._expression)
+      ),
+      field("directive", "zero")
+    )),
+
+    directive_attribute: $ => choice(
+      seq(token(prec(1, "repeat")), $._expression)
+    ),
+
+    _data_directive: $ => token(prec(1, choice(
+      "word",
+      "hword",
+      "qword",
+      "byte",
+      "align",
     ))),
 
     instruction: $ => prec.right(seq(
