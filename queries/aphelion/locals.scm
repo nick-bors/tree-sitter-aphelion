@@ -1,5 +1,6 @@
 (source_file) @local.scope
 
 (label name: (identifier) @local.definition)
+(define_decl name: (identifier) @local.definition)
 
-(identifier) @local.reference
+(atom (identifier) @local.reference)

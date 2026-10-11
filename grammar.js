@@ -22,64 +22,103 @@ export default grammar({
     _statement: $ => choice(
       $.section,
       $.label,
-      $.instruction
+      $.instruction,
+      $.data,
+      $.define_decl,
     ),
 
     section: $ => seq(
       repeat($.section_attribute),
-      token("section"),
-      field("name", $.string)
+      field("start", "section"),
+      field("name", $.string),
+      optional($.section_spec)
     ),
-    
+
+    define_decl: $ => seq(field("directive", "define"), field("name", choice($.string, $.identifier)), "=", $._expression),
+
     section_attribute: $ => token(prec(1, choice(
         "unmapped",
         "writable",
         "executable",
+        "threadlocal",
         "blank",
-        "pinned",
         "common",
-        "nonvolatile",
-        "unique",
     ))),
 
-    label: $ => seq(repeat($.label_attribute), field("name", $.identifier), ":"),
+    section_spec: $ => seq(field("directive", "align"), $._expression),
+
+    label: $ => seq(repeat($.label_attribute), optional("."), field("name", $.identifier), ":"),
 
     label_attribute: $ => token(prec(1, choice(
-	    "entry",
 	    "global",
 	    "local",
 	    "weak",
     ))),
 
-    directive: $ => seq(repeat($.directive_attribute), choice(
-      seq(field("directive", token(prec(1, "string"))), 
-        $.string, repeat(seq(",", $.string)), optional($.string)
-      ),
-      seq(field("directive", $._data_directive), 
-        $._expression, repeat(seq(",", $._expression)), optional($._expression)
-      ),
-      field("directive", "zero")
-    )),
+    data: $ => seq(optional($.data_modifier), $.data_directive),
 
-    directive_attribute: $ => choice(
-      seq(token(prec(1, "repeat")), $._expression)
+    data_directive: $ => choice(
+      seq("align", $._expression),
+      seq("loc", $._expression),
+      seq("byte", $._expression),
+      seq("qword", $._expression),
+      seq("hword", $._expression),
+      seq("word", $._expression),
+      seq("string", $.string),
     ),
 
-    _data_directive: $ => token(prec(1, choice(
-      "word",
-      "hword",
-      "qword",
-      "byte",
-      "align",
-    ))),
+    data_modifier: $ => choice("unaligned", seq("repeat", $._expression)),
+
+    mnemonic: _ => choice(
+      /ssi(\.c)?/,
+      /auir/,
+      /fence(\.[sl])?/,
+      /cinval(\.([id].)?(block|page|all))?/,
+      /cfetch(\.(l|s|i|ls|li|si|lsi))?/,
+      /tinval(\.(page|priv|all))?/,
+      /(sys|f)?call/,
+      /breakpt/,
+      /spin/,
+      /i?ret/,
+      /[sl]ctrl/,
+      /wait/,
+      /(add|sub|and|or|nor|xor|mul)i?/,
+      /[ui]mulh/,
+      /[ui]mulh/,
+      /[ui]divi?/,
+      /[ui]remi?/,
+      /s[ui]l(e|t)i?/,
+      /seqi?/,
+      /(sc?|ll?)[whqb]i?/,
+      /jlr?/,
+      /b[zn]/,
+      /[ui]sr/,
+      /ro[rl]/,
+      /sl/,
+      /si(\.[ui])?/,
+      /mb(\.i)?/,
+      /rev(\.([hqb]|bit))?/,
+      /ext/,
+      /dep/,
+      /l(i|f?a)/,
+      /[ls][whqb]a/,
+      /nop/,
+      /mov/,
+      /c([tl]z|sb)/,
+    ),
 
     instruction: $ => prec.right(seq(
-      field("mnemonic", $.identifier),
+      field("mnemonic", $.mnemonic),
       optional(seq(
-        field("operands", $._expression),
-        repeat(seq(",", field("operands", $._expression))),
+        field("operands", $._inst_operand),
+        repeat(seq(",", field("operands", $._inst_operand))),
       )),
     )),
+
+    _inst_operand: $ => choice(
+      $.register,
+      $._expression
+    ),
 
     _expression: $ => choice(
       $.binary_expression,
@@ -90,33 +129,33 @@ export default grammar({
     unary_expression: $ => prec(5,
       seq(
         field("operator", choice("-", "~")),
-        field("argument", $._expression)
+        field("operand", $._expression)
       )
     ),
 
     binary_expression: $ => choice(
-      prec.left(4, 
+      prec.left(4,
         seq(
           field("left", $._expression),
           field("operator", choice("*", "/", "%")),
           field("right", $._expression)
         )
       ),
-      prec.left(3, 
+      prec.left(3,
         seq(
           field("left", $._expression),
           field("operator", choice("+", "-")),
           field("right", $._expression)
         )
       ),
-      prec.left(2, 
+      prec.left(2,
         seq(
           field("left", $._expression),
           field("operator", "&"),
           field("right", $._expression)
         )
       ),
-      prec.left(1, 
+      prec.left(1,
         seq(
           field("left", $._expression),
           field("operator", "|"),
@@ -126,23 +165,31 @@ export default grammar({
     ),
 
     atom: $ => choice(
-      $.register,
       $.identifier,
       $.immediate,
       $.string,
-      seq(/[\[\(]/, $._expression, /[\)\]]/),
+      seq("(", $._expression, ")"),
+      $.memory
+    ),
+
+    memory: $ => seq(
+      "[",
+      $.register,
+      optional(seq("+", $.register)),
+      optional(seq("+", $._expression)),
+      "]"
     ),
 
     register: $ => token(choice(
-      "zr",
+      /zr/,
       /a[0-5]/,
-      /l[0-13]/,
+      /l([0-9]|1[0-3])/,
       /t[0-5]/,
-      "[tfsli]p",
-      /int[0-15]/,
+      /[tfsli]p/,
+      /int([0-9]|1[0-5])/,
       /int(ip|val|pte|cause|stat)/,
       /[ku]ptp/,
-      "stat",
+      /stat/,
     )),
 
     immediate: $ => token(
